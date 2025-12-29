@@ -1,0 +1,39 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  ai:
+    mcp:
+      client:
+        request-timeout: 60000
+        stdio:
+          # 1. 单独放在一个json文件（推荐）
+          servers-configuration: classpath:/mcp/mcp-servers-config.json
+#        sse:
+#          connections:
+#            UserSSEInfo:
+#              url: http://localhost:8088
+        # 2. 直接配置全局配置文件中
+#          connections:
+#            baidu-map:
+#              command: cmd
+#              args:
+#                - /c
+#                - npx
+#                - -y
+#                - @baidumap/mcp-server-baidu-map
+#              env:
+#                BAIDU_MAP_API_KEY: LEyBQxG9UzR9C1GZ6zDHsFDVKvBem2do
+
+# 调试日志
+logging:
+  level:
+    io:
+      modelcontextprotocol:
+        client: DEBUG
+        spec: DEBUG
