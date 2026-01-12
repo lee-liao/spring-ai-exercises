@@ -74,10 +74,10 @@ public class SplitterTest {
 
         documents = vectorStore.similaritySearch(
                 SearchRequest.builder()
-                        .filterExpression("filename in ('退票')")
-
-                        // 过滤元数据
-                        .filterExpression("excerpt_keywords in ('退票')")
+                        .query("退票")
+                        .topK(5)
+                        // 过滤元数据 - keywords contain '退票'
+                        .filterExpression("excerpt_keywords == '退票'")
                         .build());
 
         for (Document document : documents) {

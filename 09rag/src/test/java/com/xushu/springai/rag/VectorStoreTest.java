@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Bean;
 
 import java.util.List;
 
-@SpringBootTest
+@SpringBootTest(classes = TestConfig.class)
 public class VectorStoreTest {
 
     @Test
