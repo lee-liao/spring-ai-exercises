@@ -31,3 +31,20 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Logs ###
+logs/
+*.log
+
+### AI Tools ###
+.ai/
+.claude/
+
+### Build/Test Temp Files ###
+nul
+test-*.bat
+test-*.sh
+
+### OS Files ###
+.DS_Store
+Thumbs.db
