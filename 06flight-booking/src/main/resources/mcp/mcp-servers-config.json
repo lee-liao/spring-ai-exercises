@@ -6,7 +6,7 @@
         "-Dspring.ai.mcp.server.stdio=true",
         "-Dlogging.pattern.console=",
         "-jar",
-          "D:\\ideaworkspace\\git_pull\\spring-ai-parent\\07mcp-stdio-server\\target\\07mcp-stdio-server-0.0.1-xs.jar"
+          "D:\\MyCode\\Java\\spring-ai-parent\\07mcp-stdio-server\\target\\07mcp-stdio-server-0.0.1-xs.jar"
       ]
     }
   }

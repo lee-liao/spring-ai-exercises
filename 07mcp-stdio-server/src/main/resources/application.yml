@@ -9,3 +9,12 @@ spring:
         version: 0.0.1
 
 # 注意：您必须禁用横幅和控制台日志记录，以允许 STDIO 传输!!工作  banner-mode: off
+logging:
+  level:
+    root: ERROR
+    org.springframework.ai: ERROR
+    com.xs.ai: ERROR
+  file:
+    name: logs/mcp-server.log
+  pattern:
+    console:

@@ -32,8 +32,8 @@ public class McpSSEApplication {
     }
 
     @Bean
-    public ToolCallbackProvider weatherTools(UserToolService userToolService) {
-        return MethodToolCallbackProvider.builder().toolObjects(userToolService).build();
+    public ToolCallbackProvider weatherTools(OpenMeteoService openMeteoService) {
+        return MethodToolCallbackProvider.builder().toolObjects(openMeteoService).build();
     }
 
 }

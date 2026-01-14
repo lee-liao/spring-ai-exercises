@@ -69,6 +69,11 @@ spring.ai.mcp.server.version=0.0.1
 - 必须禁用 banner 和控制台日志，以确保 STDIO 传输正常工作
 
 ## 如何使用
+###  服务端启动
+```
+java -jar target/08mcp-sse-server-0.0.1-xs.jar
+```
+
 
 ### 构建项目
 

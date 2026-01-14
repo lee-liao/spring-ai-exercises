@@ -17,18 +17,24 @@
  */
 package com.xs.ai.mcp.sse.server;
 
-import java.util.List;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
 
 /**
  * 利用OpenMeteo的免费天气API提供天气服务
@@ -37,17 +43,15 @@ import org.springframework.web.client.RestClientException;
 @Service
 public class OpenMeteoService {
 
-    // OpenMeteo免费天气API基础URL
-    private static final String BASE_URL = "https://api.open-meteo.com/v1";
+    private static final String WEATHER_API_URL = "https://api.open-meteo.com/v1/forecast";
+    private static final String AIR_QUALITY_API_URL = "https://air-quality-api.open-meteo.com/v1/air-quality";
 
-    private final RestClient restClient;
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
 
     public OpenMeteoService() {
-        this.restClient = RestClient.builder()
-                .baseUrl(BASE_URL)
-                .defaultHeader("Accept", "application/json")
-                .defaultHeader("User-Agent", "OpenMeteoClient/1.0")
-                .build();
+        this.httpClient = HttpClient.newHttpClient();
+        this.objectMapper = new ObjectMapper();
     }
 
     // OpenMeteo天气数据模型
@@ -137,90 +141,245 @@ public class OpenMeteoService {
 
     /**
      * 获取指定经纬度的天气预报
-     * 
+     *
      * @param latitude  纬度
      * @param longitude 经度
      * @return 指定位置的天气预报
-     * @throws RestClientException 如果请求失败
      */
     @Tool(description = "获取指定经纬度的天气预报,根据位置自动推算经纬度")
     public String getWeatherForecastByLocation(
               double latitude,
               double longitude) {
-        // 获取天气数据（当前和未来7天）
-        var weatherData = restClient.get()
-                .uri("/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code,wind_speed_10m_max,wind_direction_10m_dominant&timezone=auto&forecast_days=7",
-                        latitude, longitude)
-                .retrieve()
-                .body(WeatherData.class);
+        try {
+            String url = WEATHER_API_URL +
+                    "?latitude=" + latitude +
+                    "&longitude=" + longitude +
+                    "&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m" +
+                    "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code,wind_speed_10m_max,wind_direction_10m_dominant" +
+                    "&timezone=auto";
 
-        // 拼接天气信息
-        StringBuilder weatherInfo = new StringBuilder();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
 
-        // 添加当前天气信息
-        WeatherData.CurrentWeather current = weatherData.current();
-        String temperatureUnit = weatherData.currentUnits() != null ? weatherData.currentUnits().temperatureUnit()
-                : "°C";
-        String windSpeedUnit = weatherData.currentUnits() != null ? weatherData.currentUnits().windSpeedUnit() : "km/h";
-        String humidityUnit = weatherData.currentUnits() != null ? weatherData.currentUnits().humidityUnit() : "%";
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString());
 
-        weatherInfo.append(String.format("""
-                当前天气:
-                温度: %.1f%s (体感温度: %.1f%s)
-                天气: %s
-                风向: %s (%.1f %s)
-                湿度: %d%s
-                降水量: %.1f 毫米
+            if (response.statusCode() != 200) {
+                return "获取天气信息失败: HTTP " + response.statusCode();
+            }
 
-                """,
-                current.temperature(),
-                temperatureUnit,
-                current.feelsLike(),
-                temperatureUnit,
-                getWeatherDescription(current.weatherCode()),
-                getWindDirection(current.windDirection()),
-                current.windSpeed(),
-                windSpeedUnit,
-                current.humidity(),
-                humidityUnit,
-                current.precipitation()));
+            WeatherData data = objectMapper.readValue(response.body(), WeatherData.class);
+            return formatWeatherData(data);
 
-        // 添加未来天气预报
-        weatherInfo.append("未来天气预报:\n");
-        WeatherData.DailyForecast daily = weatherData.daily();
-
-        for (int i = 0; i < daily.time().size(); i++) {
-            String date = daily.time().get(i);
-            double tempMin = daily.tempMin().get(i);
-            double tempMax = daily.tempMax().get(i);
-            int weatherCode = daily.weatherCode().get(i);
-            double windSpeed = daily.windSpeedMax().get(i);
-            int windDir = daily.windDirection().get(i);
-            double precip = daily.precipitationSum().get(i);
-
-            // 格式化日期
-            LocalDate localDate = LocalDate.parse(date);
-            String formattedDate = localDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd (EEE)"));
-
-            weatherInfo.append(String.format("""
-                    %s:
-                    温度: %.1f%s ~ %.1f%s
-                    天气: %s
-                    风向: %s (%.1f %s)
-                    降水量: %.1f 毫米
-
-                    """,
-                    formattedDate,
-                    tempMin, temperatureUnit,
-                    tempMax, temperatureUnit,
-                    getWeatherDescription(weatherCode),
-                    getWindDirection(windDir),
-                    windSpeed, windSpeedUnit,
-                    precip));
+        } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return "获取天气信息失败: " + e.getMessage();
         }
-
-        return weatherInfo.toString();
     }
 
+    /**
+     * 格式化天气数据为易读的中文格式
+     */
+    private String formatWeatherData(WeatherData data) {
+        StringBuilder sb = new StringBuilder();
+
+        if (data.current() != null) {
+            var current = data.current();
+            var units = data.currentUnits();
+
+            sb.append("📍 位置: 纬度 ").append(data.latitude())
+                    .append(", 经度 ").append(data.longitude()).append("\n");
+            sb.append("🕐 当前时间: ").append(current.time()).append("\n");
+            sb.append("🌡️ 当前温度: ").append(current.temperature())
+                    .append(units != null ? units.temperatureUnit() : "°C").append("\n");
+            sb.append("🤴 体感温度: ").append(current.feelsLike()).append("°C\n");
+            sb.append("💧 湿度: ").append(current.humidity()).append("%\n");
+            sb.append("🌧️ 降水量: ").append(current.precipitation()).append(" mm\n");
+            sb.append("☁️ 天气: ").append(getWeatherDescription(current.weatherCode())).append("\n");
+            sb.append("💨 风速: ").append(current.windSpeed())
+                    .append(units != null ? units.windSpeedUnit() : "km/h")
+                    .append(" ").append(getWindDirection(current.windDirection())).append("\n");
+        }
+
+        if (data.daily() != null && data.daily().time() != null && !data.daily().time().isEmpty()) {
+            var daily = data.daily();
+            sb.append("\n📅 未来几天预报:\n");
+
+            int days = Math.min(7, daily.time().size());
+            for (int i = 0; i < days; i++) {
+                sb.append("  ").append(daily.time().get(i))
+                        .append(": ").append(getWeatherDescription(daily.weatherCode().get(i)))
+                        .append(", 最高 ").append(daily.tempMax().get(i)).append("°C")
+                        .append(", 最低 ").append(daily.tempMin().get(i)).append("°C");
+                if (daily.precipitationSum() != null && i < daily.precipitationSum().size()) {
+                    sb.append(", 降水 ").append(daily.precipitationSum().get(i)).append(" mm");
+                }
+                sb.append("\n");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    // OpenMeteo空气质量数据模型
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record AirQualityData(
+            @JsonProperty("latitude") Double latitude,
+            @JsonProperty("longitude") Double longitude,
+            @JsonProperty("timezone") String timezone,
+            @JsonProperty("current") CurrentAirQuality current,
+            @JsonProperty("hourly") HourlyAirQuality hourly,
+            @JsonProperty("hourly_units") HourlyUnits hourlyUnits) {
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record CurrentAirQuality(
+                @JsonProperty("time") String time,
+                @JsonProperty("pm10") Double pm10,
+                @JsonProperty("pm2_5") Double pm25,
+                @JsonProperty("carbon_monoxide") Double carbonMonoxide,
+                @JsonProperty("nitrogen_dioxide") Double nitrogenDioxide,
+                @JsonProperty("sulphur_dioxide") Double sulphurDioxide,
+                @JsonProperty("ozone") Double ozone,
+                @JsonProperty("european_aqi") Integer europeanAqi,
+                @JsonProperty("us_aqi") Integer usAqi) {
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record HourlyAirQuality(
+                @JsonProperty("time") List<String> time,
+                @JsonProperty("pm10") List<Double> pm10,
+                @JsonProperty("pm2_5") List<Double> pm25,
+                @JsonProperty("carbon_monoxide") List<Double> carbonMonoxide,
+                @JsonProperty("nitrogen_dioxide") List<Double> nitrogenDioxide,
+                @JsonProperty("sulphur_dioxide") List<Double> sulphurDioxide,
+                @JsonProperty("ozone") List<Double> ozone,
+                @JsonProperty("european_aqi") List<Integer> europeanAqi,
+                @JsonProperty("us_aqi") List<Integer> usAqi) {
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record HourlyUnits(
+                @JsonProperty("time") String time,
+                @JsonProperty("pm10") String pm10,
+                @JsonProperty("pm2_5") String pm25,
+                @JsonProperty("carbon_monoxide") String carbonMonoxide,
+                @JsonProperty("nitrogen_dioxide") String nitrogenDioxide,
+                @JsonProperty("sulphur_dioxide") String sulphurDioxide,
+                @JsonProperty("ozone") String ozone,
+                @JsonProperty("european_aqi") String europeanAqi,
+                @JsonProperty("us_aqi") String usAqi) {
+        }
+    }
+
+    /**
+     * 获取空气质量指数描述
+     */
+    private String getAirQualityDescription(int aqi) {
+        if (aqi <= 50)
+            return "优";
+        if (aqi <= 100)
+            return "良";
+        if (aqi <= 150)
+            return "轻度污染";
+        if (aqi <= 200)
+            return "中度污染";
+        if (aqi <= 300)
+            return "重度污染";
+        return "严重污染";
+    }
+
+    /**
+     * 获取指定经纬度的空气质量信息
+     *
+     * @param latitude  纬度
+     * @param longitude 经度
+     * @return 指定位置的空气质量信息
+     */
+    @Tool(description = "获取指定位置的空气质量信息,根据位置自动推算经纬度")
+    public String getAirQuality(
+            @ToolParam(description = "纬度") double latitude,
+            @ToolParam(description = "经度") double longitude) {
+        try {
+            String url = AIR_QUALITY_API_URL +
+                    "?latitude=" + latitude +
+                    "&longitude=" + longitude +
+                    "&current=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,european_aqi,us_aqi" +
+                    "&timezone=auto";
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                return "获取空气质量信息失败: HTTP " + response.statusCode();
+            }
+
+            AirQualityData data = objectMapper.readValue(response.body(), AirQualityData.class);
+            return formatAirQualityData(data);
+
+        } catch (IOException | InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return "获取空气质量信息失败: " + e.getMessage();
+        }
+    }
+
+    /**
+     * 格式化空气质量数据为易读的中文格式
+     */
+    private String formatAirQualityData(AirQualityData data) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("📍 位置: 纬度 ").append(data.latitude())
+                .append(", 经度 ").append(data.longitude()).append("\n");
+
+        if (data.current() != null) {
+            var current = data.current();
+
+            sb.append("🕐 更新时间: ").append(current.time()).append("\n\n");
+
+            sb.append("🌫️ 空气质量指数 (AQI):\n");
+            if (current.europeanAqi() != null) {
+                sb.append("  欧洲AQI: ").append(current.europeanAqi())
+                        .append(" (").append(getAirQualityDescription(current.europeanAqi())).append(")\n");
+            }
+            if (current.usAqi() != null) {
+                sb.append("  美国AQI: ").append(current.usAqi())
+                        .append(" (").append(getAirQualityDescription(current.usAqi())).append(")\n");
+            }
+
+            sb.append("\n🔬 污染物浓度:\n");
+
+            if (current.pm25() != null) {
+                sb.append("  PM2.5: ").append(String.format("%.1f", current.pm25())).append(" μg/m³\n");
+            }
+            if (current.pm10() != null) {
+                sb.append("  PM10: ").append(String.format("%.1f", current.pm10())).append(" μg/m³\n");
+            }
+            if (current.carbonMonoxide() != null) {
+                sb.append("  一氧化碳 (CO): ").append(String.format("%.1f", current.carbonMonoxide()))
+                        .append(" μg/m³\n");
+            }
+            if (current.nitrogenDioxide() != null) {
+                sb.append("  二氧化氮 (NO₂): ").append(String.format("%.1f", current.nitrogenDioxide()))
+                        .append(" μg/m³\n");
+            }
+            if (current.sulphurDioxide() != null) {
+                sb.append("  二氧化硫 (SO₂): ").append(String.format("%.1f", current.sulphurDioxide()))
+                        .append(" μg/m³\n");
+            }
+            if (current.ozone() != null) {
+                sb.append("  臭氧 (O₃): ").append(String.format("%.1f", current.ozone()))
+                        .append(" μg/m³\n");
+            }
+        }
+
+        return sb.toString();
+    }
 
 }

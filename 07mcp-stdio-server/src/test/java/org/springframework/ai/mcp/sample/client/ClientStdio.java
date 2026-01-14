@@ -36,9 +36,25 @@ public class ClientStdio {
 
     public static void main(String[] args) {
 
+        // Get the project root directory dynamically
+        String userDir = System.getProperty("user.dir");
+        String jarPath;
+
+        // Handle both parent and module directory scenarios
+        if (userDir.endsWith("07mcp-stdio-server")) {
+            // Running from module directory
+            jarPath = userDir + "\\target\\07mcp-stdio-server-0.0.1-xs.jar";
+        } else {
+            // Running from parent directory
+            jarPath = userDir + "\\07mcp-stdio-server\\target\\07mcp-stdio-server-0.0.1-xs.jar";
+        }
+
         var stdioParams = ServerParameters.builder("java")
-                .args("-jar",
-                        "spring-ai-alibaba-mcp-example/starter-example/server/starter-stdio-server/target/mcp-stdio-server-exmaple-0.0.1-SNAPSHOT.jar")
+                .args("-Dfile.encoding=UTF-8", // Ensure UTF-8 encoding for Chinese characters
+                        "-Dsun.jnu.encoding=UTF-8", // Additional encoding for Windows
+                        "-Dlogging.level.root=ERROR", // Force server logs to ERROR only
+                        "-jar",
+                        jarPath)
                 .build();
 
         var transport = new StdioClientTransport(stdioParams);

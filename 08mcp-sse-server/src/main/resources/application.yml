@@ -4,5 +4,6 @@ spring:
       server:
         name: my-weather-server
         version: 0.0.1
+        path: /mcp
 server:
   port: 8088
