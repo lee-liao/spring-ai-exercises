@@ -1,0 +1,58 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: nl2sql-service
+
+  # Exclude all OpenAI auto-configurations to avoid conflicts
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
+
+  # Spring AI Configuration for DashScope (Alibaba Cloud)
+  ai:
+    # Use DashScope directly (not OpenAI-compatible mode)
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:your-dashscope-api-key-here}
+      chat:
+        options:
+          model: qwen-max  # Use qwen-max for complex NL2SQL tasks
+          temperature: 0.1  # Low temperature for more deterministic SQL generation
+
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5434/kb?currentSchema=public
+    username: exercise8
+    password: exercise8password
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.xushu.springai.nl2sql: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+

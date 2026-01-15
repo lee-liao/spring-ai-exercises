@@ -42,11 +42,21 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
-        <!-- Micrometer Observation for Spring AI metrics -->
-        <!--dependency>
+        <!-- Micrometer Observation for Spring AI metrics and tracing -->
+        <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-observation</artifactId>
-        </dependency-->
+        </dependency>
+        <!-- Micrometer Tracing Bridge to OpenTelemetry -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <!-- OpenTelemetry Exporter for Jaeger (using Spring Boot managed version) -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
         <!-- Add this for Prometheus support -->
         <dependency>
             <groupId>io.micrometer</groupId>

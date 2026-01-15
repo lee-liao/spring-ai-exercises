@@ -20,6 +20,7 @@
         <module>09rag</module>
         <module>10observability-actuator</module>
         <module>11spring-ai-agent</module>
+        <module>12nl2sql</module>
     </modules>
 
     <properties>

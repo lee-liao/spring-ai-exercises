@@ -7,4 +7,26 @@ management:
   endpoint:
     health:
       show-details: always
+  tracing:
+    sampling:
+      probability: 1.0  # Sample 100% of traces
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces  # OTLP endpoint for OTEL Collector
+
+spring:
+  application:
+    name: spring-ai-chat
+  ai:
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:your-api-key-here}
+      chat:
+        options:
+          model: deepseek-chat
+          temperature: 0.7
+# Increase timeout for AI API calls
+  web:
+    client:
+      connect-timeout: 30s
+      read-timeout: 60s
 
