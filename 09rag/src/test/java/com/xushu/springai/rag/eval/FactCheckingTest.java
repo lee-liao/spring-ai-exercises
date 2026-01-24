@@ -57,8 +57,8 @@ public class FactCheckingTest {
     @Test
     void testRelevancyEvaluator(@Autowired DashScopeChatModel chatModel) {
 
-        // 创建 FactCheckingEvaluator
-        var evaluator = new RelevancyEvaluator(ChatClient.builder(chatModel));
+        // 创建 RelevancyEvaluator
+        var relevancyEvaluator = new RelevancyEvaluator(ChatClient.builder(chatModel));
 
         // 示例上下文和声明
         String context = "地球是距离太阳的第三颗行星，也是已知唯一孕育生命的天文物体。";
@@ -68,7 +68,7 @@ public class FactCheckingTest {
         EvaluationRequest evaluationRequest = new EvaluationRequest(context, Collections.emptyList(), claim);
 
         // 执行评估
-        EvaluationResponse evaluationResponse = evaluator.evaluate(evaluationRequest);
+        EvaluationResponse evaluationResponse = relevancyEvaluator.evaluate(evaluationRequest);
 
 
         System.out.println(evaluationResponse);

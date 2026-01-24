@@ -74,8 +74,8 @@ public class RagEvalTest {
                 chatResponse.getResult().getOutput().getText()
         );
 
-        RelevancyEvaluator evaluator = new RelevancyEvaluator(ChatClient.builder(dashScopeChatModel));
-        EvaluationResponse evaluationResponse = evaluator.evaluate(evaluationRequest);
+        RelevancyEvaluator relevancyEvaluator = new RelevancyEvaluator(ChatClient.builder(dashScopeChatModel));
+        EvaluationResponse evaluationResponse = relevancyEvaluator.evaluate(evaluationRequest);
         System.out.println(evaluationResponse);
         System.out.println(chatResponse.getResult().getOutput().getText());
     }

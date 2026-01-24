@@ -75,45 +75,69 @@ public class PracticalChainWorkflow {
       
     public void process(String businessRequirement) {
         List<String> processSteps = new ArrayList<>();
-        String currentOutput = businessRequirement;  
-          
-        System.out.println("=== 开始项目全流程处理 ===");  
-          
-        // 步骤1: 需求分析  
-        System.out.println("步骤1: 业务需求分析");
-        String currentOutput1 = chatClient.prompt()
-            .user(u -> u.text(REQUIREMENT_ANALYSIS_PROMPT).param("input", currentOutput))
-            .call()  
-            .content();
+        String currentOutput = businessRequirement;
 
+        System.out.println("=== 开始项目全流程处理 ===");
+
+        // 步骤1: 需求分析
+        System.out.println("步骤1: 业务需求分析");
+        String currentOutput1;
+        try {
+            currentOutput1 = chatClient.prompt()
+                .user(u -> u.text(REQUIREMENT_ANALYSIS_PROMPT).param("input", currentOutput))
+                .call()
+                .content();
+        } catch (Exception e) {
+            System.err.println("步骤1执行失败: " + e.getMessage());
+            throw new RuntimeException("DashScope API调用失败，请检查网络连接和API密钥配置", e);
+        }
+        System.out.println(currentOutput1);
         // ==== Gate 逻辑 ====
         if (currentOutput1.contains("FAIL")) {
             System.out.println("【流程终止】：需求无法实现，流程提前退出。");
             return; // 提前返回，不进行后续步骤
         }
         System.out.println("需求分析完成:"+currentOutput1);
-        // 步骤2: 架构设计  
+        // 步骤2: 架构设计
         System.out.println("步骤2: 系统架构设计");
-        String currentOutput2 = chatClient.prompt()
-            .user(u -> u.text(ARCHITECTURE_DESIGN_PROMPT).param("input", currentOutput1))
-            .call()  
-            .content();
+        String currentOutput2;
+        try {
+            currentOutput2 = chatClient.prompt()
+                .user(u -> u.text(ARCHITECTURE_DESIGN_PROMPT).param("input", currentOutput1))
+                .call()
+                .content();
+        } catch (Exception e) {
+            System.err.println("步骤2执行失败: " + e.getMessage());
+            throw new RuntimeException("DashScope API调用失败", e);
+        }
         System.out.println("架构设计完成:"+currentOutput2);
           
-        // 步骤3: 实施计划  
+        // 步骤3: 实施计划
         System.out.println("步骤3: 项目实施规划");
-        String currentOutput3 = chatClient.prompt()
-            .user(u -> u.text(IMPLEMENTATION_PLAN_PROMPT).param("input", currentOutput2))
-            .call()  
-            .content();
+        String currentOutput3;
+        try {
+            currentOutput3 = chatClient.prompt()
+                .user(u -> u.text(IMPLEMENTATION_PLAN_PROMPT).param("input", currentOutput2))
+                .call()
+                .content();
+        } catch (Exception e) {
+            System.err.println("步骤3执行失败: " + e.getMessage());
+            throw new RuntimeException("DashScope API调用失败", e);
+        }
         System.out.println("实施计划完成:"+currentOutput3);
           
-        // 步骤4: 交付清单  
+        // 步骤4: 交付清单
         System.out.println("步骤4: 交付清单制定");
-        String currentOutput4 = chatClient.prompt()
-            .user(u -> u.text(DELIVERY_CHECKLIST_PROMPT).param("input", currentOutput3))
-            .call()  
-            .content();
+        String currentOutput4;
+        try {
+            currentOutput4 = chatClient.prompt()
+                .user(u -> u.text(DELIVERY_CHECKLIST_PROMPT).param("input", currentOutput3))
+                .call()
+                .content();
+        } catch (Exception e) {
+            System.err.println("步骤4执行失败: " + e.getMessage());
+            throw new RuntimeException("DashScope API调用失败", e);
+        }
         System.out.println("交付清单完成:"+currentOutput4);
           
         System.out.println("=== 项目全流程处理完成 ===");  
