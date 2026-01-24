@@ -46,13 +46,25 @@ public class SimpleEvaluatorOptimizer {
     int iteration = 0;
     String context = "";
     public RefinedResponse loop(String task) {
-            System.out.println("=== 第" + (iteration + 1) + "轮迭代 ===");  
+            System.out.println("=== 第" + (iteration + 1) + "轮迭代 ===");
+
+            // 生成代码
+            Generation generation;
+            try {
+                generation = generate(task, context);
+            } catch (Exception e) {
+                System.err.println("代码生成失败: " + e.getMessage());
+                throw new RuntimeException("生成阶段失败，请检查API连接和配置", e);
+            }
               
-            // 生成代码  
-            Generation generation = generate(task,context);
-              
-            // 评估代码  
-            EvaluationResponse evaluation = evaluate(generation.response(), task);
+            // 评估代码
+            EvaluationResponse evaluation;
+            try {
+                evaluation = evaluate(generation.response(), task);
+            } catch (Exception e) {
+                System.err.println("代码评估失败: " + e.getMessage());
+                throw new RuntimeException("评估阶段失败，请检查API连接和配置", e);
+            }
             System.out.println("生成结果: " + generation.response());
             System.out.println("评估结果: " + evaluation.evaluation());
             System.out.println("反馈: " + evaluation.feedback());  

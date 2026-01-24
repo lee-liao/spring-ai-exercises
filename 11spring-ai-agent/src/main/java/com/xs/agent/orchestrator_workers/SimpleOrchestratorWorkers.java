@@ -60,29 +60,41 @@ public class SimpleOrchestratorWorkers {
     }  
       
     public void process(String taskDescription) {
-        System.out.println("=== 开始处理任务 ===");  
-          
-        // 步骤1: 编排器分析任务  
-        OrchestratorResponse orchestratorResponse = chatClient.prompt()
-            .system(p -> p.param("task", taskDescription))
-            .user(ORCHESTRATOR_PROMPT)
-            .call()
-            .entity(OrchestratorResponse.class);  
+        System.out.println("=== 开始处理任务 ===");
+
+        // 步骤1: 编排器分析任务
+        OrchestratorResponse orchestratorResponse;
+        try {
+            orchestratorResponse = chatClient.prompt()
+                .system(p -> p.param("task", taskDescription))
+                .user(ORCHESTRATOR_PROMPT)
+                .call()
+                .entity(OrchestratorResponse.class);
+        } catch (Exception e) {
+            System.err.println("编排器分析失败: " + e.getMessage());
+            throw new RuntimeException("编排器阶段失败，请检查API连接和配置", e);
+        }  
           
         System.out.println("编排器分析: " + orchestratorResponse.analysis());  
         System.out.println("子任务列表: " + orchestratorResponse.tasks());  
           
-        // 步骤2: 工作者处理各个子任务  
+        // 步骤2: 工作者处理各个子任务
         orchestratorResponse.tasks().stream()
-            .map(task -> {  
+            .map(task -> {
                 System.out.println("-----------------------------------处理子任务: " + task.type()+"--------------------------------");
-                String content = chatClient.prompt()
-                        .user(u -> u.text(WORKER_PROMPT)
-                                .param("original_task", taskDescription)
-                                .param("task_type", task.type())
-                                .param("task_description", task.description()))
-                        .call()
-                        .content();
+                String content;
+                try {
+                    content = chatClient.prompt()
+                            .user(u -> u.text(WORKER_PROMPT)
+                                    .param("original_task", taskDescription)
+                                    .param("task_type", task.type())
+                                    .param("task_description", task.description()))
+                            .call()
+                            .content();
+                } catch (Exception e) {
+                    System.err.println("工作者任务处理失败 [" + task.type() + "]: " + e.getMessage());
+                    throw new RuntimeException("工作者阶段失败，请检查API连接和配置", e);
+                }
                 System.out.println(content);
                 return task;
             }).toList();

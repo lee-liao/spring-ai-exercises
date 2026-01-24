@@ -78,7 +78,31 @@ mvn clean install
 
 ### 2. Run Specific Pattern
 
-**Option A: Maven Exec Plugin (Recommended - Cross-Platform)**
+**Option A: Spring Boot Maven Plugin (Recommended)**
+
+PowerShell UTF-8 setup (recommended for Chinese output):
+
+```powershell
+chcp 65001
+$OutputEncoding = [System.Text.UTF8Encoding]::new()
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+```
+
+```bash
+# Pattern 1: Chain Workflow
+mvn "-Dfile.encoding=UTF-8" spring-boot:run "-Dspring-boot.run.main-class=com.xs.agent.chain_workflow.Application"
+
+# Pattern 2: Orchestrator-Workers
+mvn "-Dfile.encoding=UTF-8" spring-boot:run "-Dspring-boot.run.main-class=com.xs.agent.orchestrator_workers.Application"
+
+# Pattern 3: Evaluator-Optimizer
+mvn "-Dfile.encoding=UTF-8" spring-boot:run "-Dspring-boot.run.main-class=com.xs.agent.evaluator_optimizer.Application"
+
+# Pattern 4: Parallelization Workflow
+mvn "-Dfile.encoding=UTF-8" spring-boot:run "-Dspring-boot.run.main-class=com.xs.agent.parallelization_worflow.Application"
+```
+
+**Option B: Maven Exec Plugin (Optional)**
 
 ```bash
 # Pattern 1: Chain Workflow
@@ -94,21 +118,7 @@ mvn exec:java -Dexec.mainClass="com.xs.agent.evaluator_optimizer.Application"
 mvn exec:java -Dexec.mainClass="com.xs.agent.parallelization_worflow.Application"
 ```
 
-**Option B: Spring Boot Maven Plugin**
-
-```bash
-# Pattern 1: Chain Workflow
-mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.chain_workflow.Application
-
-# Pattern 2: Orchestrator-Workers
-mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.orchestrator_workers.Application
-
-# Pattern 3: Evaluator-Optimizer
-mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.evaluator_optimizer.Application
-
-# Pattern 4: Parallelization Workflow
-mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.parallelization_worflow.Application
-```
+Note: `exec:java` can emit threadgroup cleanup warnings due to background threads from dependencies. `spring-boot:run` avoids this.
 
 **Option C: Direct Java Execution**
 
@@ -117,7 +127,7 @@ mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.parallelization_wo
 mvn clean package
 
 # Pattern 1: Chain Workflow
-java -jar target/spring-ai-agent-0.0.1-SNAPSHOT.jar --spring.main.main-class=com.xs.agent.chain_workflow.Application
+java -jar target/11spring-ai-agent-0.0.1-SNAPSHOT.jar --spring.main.main-class=com.xs.agent.chain_workflow.Application
 ```
 
 ### 3. Verify Output
@@ -493,16 +503,16 @@ export DEEP_SEEK_KEY="sk-..."
 # test-all-patterns.sh
 
 echo "=== Testing Pattern 1: Chain Workflow ==="
-mvn exec:java -Dexec.mainClass="com.xs.agent.chain_workflow.Application"
+mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.chain_workflow.Application
 
 echo -e "\n=== Testing Pattern 2: Orchestrator-Workers ==="
-mvn exec:java -Dexec.mainClass="com.xs.agent.orchestrator_workers.Application"
+mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.orchestrator_workers.Application
 
 echo -e "\n=== Testing Pattern 3: Evaluator-Optimizer ==="
-mvn exec:java -Dexec.mainClass="com.xs.agent.evaluator_optimizer.Application"
+mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.evaluator_optimizer.Application
 
 echo -e "\n=== Testing Pattern 4: Parallelization Workflow ==="
-mvn exec:java -Dexec.mainClass="com.xs.agent.parallelization_worflow.Application"
+mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.parallelization_worflow.Application
 ```
 
 ### PowerShell Test Script
@@ -511,16 +521,16 @@ mvn exec:java -Dexec.mainClass="com.xs.agent.parallelization_worflow.Application
 # test-all-patterns.ps1
 
 Write-Host "=== Testing Pattern 1: Chain Workflow ===" -ForegroundColor Green
-mvn exec:java -Dexec.mainClass="com.xs.agent.chain_workflow.Application"
+mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.chain_workflow.Application
 
 Write-Host "`n=== Testing Pattern 2: Orchestrator-Workers ===" -ForegroundColor Green
-mvn exec:java -Dexec.mainClass="com.xs.agent.orchestrator_workers.Application"
+mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.orchestrator_workers.Application
 
 Write-Host "`n=== Testing Pattern 3: Evaluator-Optimizer ===" -ForegroundColor Green
-mvn exec:java -Dexec.mainClass="com.xs.agent.evaluator_optimizer.Application"
+mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.evaluator_optimizer.Application
 
 Write-Host "`n=== Testing Pattern 4: Parallelization Workflow ===" -ForegroundColor Green
-mvn exec:java -Dexec.mainClass="com.xs.agent.parallelization_worflow.Application"
+mvn spring-boot:run -Dspring-boot.run.main-class=com.xs.agent.parallelization_worflow.Application
 ```
 
 ### Interactive Testing
@@ -585,9 +595,7 @@ mvn spring-boot:run -Dspring-boot.run.mainClass=com.xs.agent.chain_workflow.Appl
 
 ### Issue 3: Port Already in Use
 
-**Error**: `Port 8080 was already in use`
-
-**Solution**: Change port in `application.yml` or stop the conflicting process.
+If you explicitly enable a web server for these demos, ensure the port is free or change it in `application.yml`.
 
 ### Issue 4: Slow Responses
 

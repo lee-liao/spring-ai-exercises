@@ -1,13 +1,13 @@
 
-/* 
+/*
 * Copyright 2024 - 2024 the original author or authors.
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
-* 
+*
 * https://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,14 +16,16 @@
 */
 package com.xs.agent.chain_workflow;
 
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import org.springframework.ai.chat.model.ChatModel;
 import com.xs.agent.config.RestClientConfig;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 // ------------------------------------------------------------
 // EVALUATOR-OPTIMIZER
@@ -34,25 +36,27 @@ import org.springframework.context.annotation.Import;
 public class Application {
 
 	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
+		SpringApplication app = new SpringApplication(Application.class);
+		// This is a CLI workflow; disable web server startup.
+		app.setWebApplicationType(WebApplicationType.NONE);
+		System.exit(SpringApplication.exit(app.run(args)));
 	}
 
 	@Bean
-	public CommandLineRunner commandLineRunner(DashScopeChatModel dashScopeChatModel) {
-		var chatClient =  ChatClient.create(dashScopeChatModel);
+	public CommandLineRunner commandLineRunner(@Qualifier("deepSeekChatModel") ChatModel chatModel) {
 		return args -> {
-			String requirements = """  
+			var chatClient = ChatClient.create(chatModel);
+			String requirements = """
 					电商平台需要升级订单处理系统，要求：
 					 1. 处理能力提升到每秒1000单
 					 2. 支持多种支付方式和优惠券
 					 3. 实时库存管理和预警
 					 4. 订单状态实时跟踪
 					 5. 数据分析和报表功能
-					 现有系统：Spring Boot + MySQL，日订单量10万 
+					现有系统：Spring Boot + MySQL，日订单量10万
 					       """;
 
-			  new PracticalChainWorkflow(chatClient).process(requirements);
-
+			new PracticalChainWorkflow(chatClient).process(requirements);
 		};
 	}
 

@@ -91,7 +91,7 @@ public class PracticalChainWorkflow {
             System.err.println("步骤1执行失败: " + e.getMessage());
             throw new RuntimeException("DashScope API调用失败，请检查网络连接和API密钥配置", e);
         }
-        System.out.println(currentOutput1);
+
         // ==== Gate 逻辑 ====
         if (currentOutput1.contains("FAIL")) {
             System.out.println("【流程终止】：需求无法实现，流程提前退出。");

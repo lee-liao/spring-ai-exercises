@@ -40,14 +40,19 @@ public class ParallelizationWorkflowWithAggregator {
       
     private List<String> parallel(List<String> inputs ) {
         ExecutorService executor = Executors.newFixedThreadPool(inputs.size());
-          
-        try {  
+
+        try {
             List<CompletableFuture<String>> futures = inputs.stream()
-                .map(input -> CompletableFuture.supplyAsync(() -> {  
-                    return chatClient.prompt(RISK_ASSESSMENT_PROMPT + "\n输入内容: " + input)
-                        .call()  
-                        .content();  
-                }, executor))  
+                .map(input -> CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return chatClient.prompt(RISK_ASSESSMENT_PROMPT + "\n输入内容: " + input)
+                            .call()
+                            .content();
+                    } catch (Exception e) {
+                        System.err.println("并行处理任务失败: " + e.getMessage());
+                        throw new RuntimeException("并行处理阶段失败，请检查API连接和配置", e);
+                    }
+                }, executor))
                 .collect(Collectors.toList());
               
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(  
@@ -63,33 +68,38 @@ public class ParallelizationWorkflowWithAggregator {
         }  
     }  
       
-    // 聚合器：将多个并行结果合并为统一输出  
+    // 聚合器：将多个并行结果合并为统一输出
     private String aggregateResults(List<String> results) {
-        String aggregatorPrompt = """  
-            你是一个数据聚合专家，请将以下多个分析结果合并为一份综合报告：  
-              
-            原始分析任务: {originalPrompt}  
-              
-            各部门/地区分析结果:  
-            {results}  
-              
-            请提供：  
-            1. 综合分析摘要  
-            2. 共同趋势和模式  
-            3. 关键差异对比  
-            4. 整体结论和建议  
-              
-            请生成一份统一的综合报告。  
-            """;  
-          
-        String combinedResults = String.join("\n\n---\n\n", results);  
-          
-        return chatClient.prompt()  
-            .user(u -> u.text(aggregatorPrompt)
-                .param("originalPrompt", RISK_ASSESSMENT_PROMPT)
-                .param("results", combinedResults))  
-            .call()  
-            .content();  
+        String aggregatorPrompt = """
+            你是一个数据聚合专家，请将以下多个分析结果合并为一份综合报告：
+
+            原始分析任务: {originalPrompt}
+
+            各部门/地区分析结果:
+            {results}
+
+            请提供：
+            1. 综合分析摘要
+            2. 共同趋势和模式
+            3. 关键差异对比
+            4. 整体结论和建议
+
+            请生成一份统一的综合报告。
+            """;
+
+        String combinedResults = String.join("\n\n---\n\n", results);
+
+        try {
+            return chatClient.prompt()
+                .user(u -> u.text(aggregatorPrompt)
+                    .param("originalPrompt", RISK_ASSESSMENT_PROMPT)
+                    .param("results", combinedResults))
+                .call()
+                .content();
+        } catch (Exception e) {
+            System.err.println("结果聚合失败: " + e.getMessage());
+            throw new RuntimeException("聚合阶段失败，请检查API连接和配置", e);
+        }
     }  
       
     public record AggregatedResult(List<String> individualResults, String aggregatedOutput) {}  

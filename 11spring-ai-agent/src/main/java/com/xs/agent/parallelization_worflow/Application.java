@@ -1,13 +1,13 @@
 
-/* 
+/*
 * Copyright 2024 - 2024 the original author or authors.
-* 
+*
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
-* 
+*
 * https://www.apache.org/licenses/LICENSE-2.0
-* 
+*
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,14 +16,16 @@
 */
 package com.xs.agent.parallelization_worflow;
 
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import org.springframework.ai.chat.model.ChatModel;
 import com.xs.agent.config.RestClientConfig;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.List;
 
@@ -36,13 +38,16 @@ import java.util.List;
 public class Application {
 
 	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
+		SpringApplication app = new SpringApplication(Application.class);
+		// This is a CLI workflow; disable web server startup.
+		app.setWebApplicationType(WebApplicationType.NONE);
+		System.exit(SpringApplication.exit(app.run(args)));
 	}
 
 	@Bean
-	public CommandLineRunner commandLineRunner(DashScopeChatModel dashScopeChatModel) {
-		var chatClient =  ChatClient.create(dashScopeChatModel);
+	public CommandLineRunner commandLineRunner(@Qualifier("deepSeekChatModel") ChatModel chatModel) {
 		return args -> {
+			var chatClient = ChatClient.create(chatModel);
 
 			List<String> departments = List.of(
 					"IT部门：负责系统架构升级，团队技术水平参差不齐，预算紧张",
